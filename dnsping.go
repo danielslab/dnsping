@@ -93,9 +93,9 @@ func main() {
 	flag.BoolVar(&verbose, "verbose", true, "verbose output")
 	flag.StringVar(&dtype, "type", "A", "dnstype for request")
 
-	dnstype := dns.StringToType[dtype]
-
 	flag.Parse()
+
+	dnstype := dns.StringToType[dtype]
 
 	var waitGroup sync.WaitGroup
 
@@ -104,7 +104,7 @@ func main() {
 	//dnsport := "53"
 	//domain := "fritz.box"
 	//dnstype := dns.TypeA
-	//timeout := 20 //in ms
+	//timeout := 20 //in mstype
 	//count := 10
 	//sleep := 100
 	//verbose := true
