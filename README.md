@@ -1,7 +1,8 @@
 # dnsping
 ping for dns that does not wait for a response before sending the next packet.  
+Originally built to measure the exact interruption time of the DNS service during a software upgrade.  
 This program uses the dns library from https://github.com/miekg/dns.  
-Originally built to measure the exact interruption time of the DNS service during a software upgrade.
+
   
 
 
