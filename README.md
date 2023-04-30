@@ -28,7 +28,7 @@ sleep in μs: 100000
 Count: 5
 quiet: false
 ------------------------------
-sending packetes...
+sending packets...
 
 MsgNumber       SendTime                            RTT(ms)         RCode      Answer              
 0               04-30-2023 20:18:53.428613339       30              NOERROR    google.de.       300     IN      A       172.217.16.163 
@@ -75,7 +75,7 @@ sleep in μs: 100000
 Count: 5
 quiet: false
 ------------------------------
-sending packetes...
+sending packets...
 
 MsgNumber       SendTime                            RTT(ms)         RCode      Answer              
 0               04-30-2023 20:16:39.719218229       read udp [fd00::a735:a204:59cf:5f4a]:34155->[fd20::]:53: i/o timeout 
