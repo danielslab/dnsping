@@ -146,6 +146,7 @@ func main() {
 	go func() {
 		<-c
 		statistic.Print()
+		statistic.Summary()
 		os.Exit(1)
 	}()
 
@@ -163,5 +164,6 @@ func main() {
 	waitGroup.Wait()
 
 	statistic.Print()
+	statistic.Summary()
 
 }

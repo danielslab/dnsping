@@ -15,18 +15,18 @@ type Statistic struct {
 	rcode_slice      map[string]int
 }
 
-func (statistic *Statistic) Increase_rcode_counter(rcode string) {
-	statistic.mutex.Lock()
-	defer statistic.mutex.Unlock()
-	statistic.rcode_slice[rcode] = statistic.rcode_slice[rcode] + 1
-}
-
 func Init_Statistic() *Statistic {
 	return &Statistic{
 		send_counter:     0,
 		received_counter: 0,
 		rcode_slice:      make(map[string]int),
 	}
+}
+
+func (statistic *Statistic) Increase_rcode_counter(rcode string) {
+	statistic.mutex.Lock()
+	defer statistic.mutex.Unlock()
+	statistic.rcode_slice[rcode] = statistic.rcode_slice[rcode] + 1
 }
 
 func (statistic *Statistic) Increase_send_counter() {
@@ -77,10 +77,53 @@ func (statistic *Statistic) Print() {
 	avg_rtt = math.Round(avg_rtt)
 
 	fmt.Println("------------------------------")
-	fmt.Println("send:", statistic.send_counter, "received:", statistic.received_counter, "loss:", loss, "min_rtt:", min_rtt, "avg_rtt:", avg_rtt, "max_rtt:", max_rtt)
+	res := fmt.Sprintf("send: %d received: %d loss: %.2f%% min_rtt: %dms avg_rtt: %.2fms max_rtt: %dms", statistic.send_counter, statistic.received_counter, float64(loss)*100/float64(statistic.send_counter), min_rtt, avg_rtt, max_rtt)
+	fmt.Println(res)
+
 	for z, m := range statistic.rcode_slice {
 		rcode = rcode + z + ":" + strconv.Itoa(m) + " "
 	}
 	fmt.Println(rcode)
 
+}
+
+func (statistic *Statistic) Summary() {
+
+	fmt.Println("")
+	fmt.Println("rtt distribution:")
+	fmt.Println("------------------------------")
+
+	for i := 0; i < 1000; {
+		from := i
+		if i >= 100 {
+			i = i + 150
+			statistic.clalculate(from, i)
+		}
+		if i < 100 && i >= 10 {
+			i = i + 10
+			statistic.clalculate(from, i)
+		}
+		if i < 10 {
+			i = i + 5
+			statistic.clalculate(from, i)
+		}
+		if i == 1000 {
+			statistic.clalculate(i, 10000)
+		}
+	}
+}
+
+func (statistic *Statistic) clalculate(from int, to int) {
+	statistic.mutex.Lock()
+	defer statistic.mutex.Unlock()
+	count := 0.0
+	for i := 0; i < len(statistic.rtt_slice); i++ {
+		if statistic.rtt_slice[i] >= from && statistic.rtt_slice[i] < to {
+			count += 1
+		}
+	}
+
+	value := count / float64(len(statistic.rtt_slice)) * 100
+	res := fmt.Sprintf("%dms to %dms: %.2f%%", from, to, value)
+	fmt.Println(res)
 }
