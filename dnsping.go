@@ -81,7 +81,7 @@ func main() {
 	var count int
 	var sleep int
 	var quiet bool
-	var dtype string
+	var qtype string
 	var timeouts_only bool
 
 	flag.StringVar(&dnsserver, "dnsserver", "8.8.8.8", "dnsserver to sent requests")
@@ -92,11 +92,11 @@ func main() {
 	flag.IntVar(&sleep, "sleep", 100000, "time between querys in μs")
 	flag.BoolVar(&quiet, "quiet", false, "displays only a summary every 10 seconds")
 	flag.BoolVar(&timeouts_only, "timeouts_only", false, "displays only timeouts or paketloss")
-	flag.StringVar(&dtype, "type", "A", "dnstype for request")
+	flag.StringVar(&qtype, "qtype", "A", "dns query type for request")
 
 	flag.Parse()
 
-	dnstype := dns.StringToType[dtype]
+	dnstype := dns.StringToType[qtype]
 
 	var waitGroup sync.WaitGroup
 

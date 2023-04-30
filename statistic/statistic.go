@@ -97,23 +97,23 @@ func (statistic *Statistic) Summary() {
 		from := i
 		if i >= 100 {
 			i = i + 150
-			statistic.clalculate(from, i)
+			statistic.calculate(from, i)
 		}
 		if i < 100 && i >= 10 {
 			i = i + 10
-			statistic.clalculate(from, i)
+			statistic.calculate(from, i)
 		}
 		if i < 10 {
 			i = i + 5
-			statistic.clalculate(from, i)
+			statistic.calculate(from, i)
 		}
 		if i == 1000 {
-			statistic.clalculate(i, 10000)
+			statistic.calculate(i, 10000)
 		}
 	}
 }
 
-func (statistic *Statistic) clalculate(from int, to int) {
+func (statistic *Statistic) calculate(from int, to int) {
 	statistic.mutex.Lock()
 	defer statistic.mutex.Unlock()
 	count := 0.0
