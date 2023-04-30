@@ -15,7 +15,7 @@ import (
 	"github.com/miekg/dns"
 )
 
-func send_query(msgnumber int, dnsserver, dnsport, domain string, dnstype uint16, timeout uint16, verbose bool, statistic *statistic.Statistic) {
+func send_query(msgnumber int, dnsserver, dnsport, domain string, dnstype uint16, timeout uint16, quiet bool, statistic *statistic.Statistic, timeouts_only bool) {
 
 	//Create DNS-Query-Nessage
 	m1 := new(dns.Msg)
@@ -35,11 +35,10 @@ func send_query(msgnumber int, dnsserver, dnsport, domain string, dnstype uint16
 	//send dns message
 	in, rtt, err := c.Exchange(m1, dnsserver+":"+dnsport)
 
-	if verbose == true {
+	if quiet == false {
 
-		if err == nil {
-			//fmt.Println("Kein Fehler:")
-			//fmt.Println("MsgNu:"+strconv.Itoa(msgnumber), "SendTime:"+dt, in, rtt, err)
+		if err == nil && timeouts_only == false {
+			//no error
 
 			// if RCode NoERROR
 			if in.Rcode == 0 {
@@ -53,9 +52,9 @@ func send_query(msgnumber int, dnsserver, dnsport, domain string, dnstype uint16
 				fmt.Printf("%-15s %-35s %-15d %-10s \n", strconv.Itoa(msgnumber), dt, rtt.Milliseconds(), dns.RcodeToString[in.Rcode])
 			}
 
-		} else {
-			//fmt.Println("Fehler:")
-			//fmt.Println("MsgNu:"+strconv.Itoa(msgnumber), "SendTime:"+dt, in, rtt, err)
+		}
+		if err != nil {
+			//error or timeout
 			fmt.Printf("%-15s %-35s %-20s \n", strconv.Itoa(msgnumber), dt, err)
 		}
 
@@ -81,8 +80,9 @@ func main() {
 	var timeout int
 	var count int
 	var sleep int
-	var verbose bool
+	var quiet bool
 	var dtype string
+	var timeouts_only bool
 
 	flag.StringVar(&dnsserver, "dnsserver", "8.8.8.8", "dnsserver to sent requests")
 	flag.StringVar(&dnsport, "dnsport", "53", "dnsport to sent requests")
@@ -90,7 +90,8 @@ func main() {
 	flag.IntVar(&timeout, "timeout", 1000, "dns-timeout in ms")
 	flag.IntVar(&count, "count", 10, "count of messages to send")
 	flag.IntVar(&sleep, "sleep", 100000, "time between querys in μs")
-	flag.BoolVar(&verbose, "verbose", true, "verbose output")
+	flag.BoolVar(&quiet, "quiet", false, "displays only a summary every 10 seconds")
+	flag.BoolVar(&timeouts_only, "timeouts_only", false, "displays only timeouts or paketloss")
 	flag.StringVar(&dtype, "type", "A", "dnstype for request")
 
 	flag.Parse()
@@ -107,7 +108,7 @@ func main() {
 	//timeout := 20 //in mstype
 	//count := 10
 	//sleep := 100
-	//verbose := true
+	//quiet := true
 
 	fmt.Println("dnsping Parameters:")
 	fmt.Println("------------------------------")
@@ -118,14 +119,14 @@ func main() {
 	fmt.Println("timeout in ms: " + strconv.Itoa(timeout))
 	fmt.Println("sleep in μs: " + strconv.Itoa(sleep))
 	fmt.Println("Count: " + strconv.Itoa(count))
-	fmt.Println("verbose: " + strconv.FormatBool(verbose))
+	fmt.Println("quiet: " + strconv.FormatBool(quiet))
 	fmt.Println("------------------------------")
 	fmt.Println("sending packetes...")
 	fmt.Println("")
 
 	statistic := statistic.Init_Statistic()
 
-	if verbose == true {
+	if quiet == false {
 		// Print Head-line
 		fmt.Printf("%-15s %-35s %-15s %-10s %-20s\n", "MsgNumber", "SendTime", "RTT(ms)", "RCode", "Answer")
 	} else {
@@ -153,7 +154,7 @@ func main() {
 		time.Sleep(time.Duration(sleep) * time.Microsecond)
 		waitGroup.Add(1)
 		go func(i int) {
-			send_query(i, dnsserver, dnsport, domain, dnstype, uint16(timeout), verbose, statistic)
+			send_query(i, dnsserver, dnsport, domain, dnstype, uint16(timeout), quiet, statistic, timeouts_only)
 			waitGroup.Done()
 		}(i)
 
