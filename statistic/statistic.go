@@ -124,6 +124,6 @@ func (statistic *Statistic) calculate(from int, to int) {
 	}
 
 	value := count / float64(len(statistic.rtt_slice)) * 100
-	res := fmt.Sprintf("%dms to %dms: %.2f%%", from, to, value)
+	res := fmt.Sprintf("%dms to %dms: %.2f%% (count: %d)", from, to, value, int(count))
 	fmt.Println(res)
 }
