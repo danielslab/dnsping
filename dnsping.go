@@ -121,7 +121,7 @@ func main() {
 	fmt.Println("Count: " + strconv.Itoa(count))
 	fmt.Println("quiet: " + strconv.FormatBool(quiet))
 	fmt.Println("------------------------------")
-	fmt.Println("sending packetes...")
+	fmt.Println("sending packets...")
 	fmt.Println("")
 
 	statistic := statistic.Init_Statistic()
