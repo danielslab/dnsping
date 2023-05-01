@@ -100,16 +100,6 @@ func main() {
 
 	var waitGroup sync.WaitGroup
 
-	//dnsserver := "[fd20::]"
-	//dnsserver := "172.16.0.1"
-	//dnsport := "53"
-	//domain := "fritz.box"
-	//dnstype := dns.TypeA
-	//timeout := 20 //in mstype
-	//count := 10
-	//sleep := 100
-	//quiet := true
-
 	fmt.Println("dnsping Parameters:")
 	fmt.Println("------------------------------")
 	fmt.Println("dnsserver: " + dnsserver)
