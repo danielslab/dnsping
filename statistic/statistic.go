@@ -77,7 +77,8 @@ func (statistic *Statistic) Print() {
 	avg_rtt = math.Round(avg_rtt)
 
 	fmt.Println("------------------------------")
-	res := fmt.Sprintf("send: %d received: %d loss: %.2f%% min_rtt: %dms avg_rtt: %.2fms max_rtt: %dms jitter: %.2fms", statistic.send_counter, statistic.received_counter, float64(loss)*100/float64(statistic.send_counter), min_rtt, avg_rtt, max_rtt, statistic.calculate_jitter())
+	res := fmt.Sprintf("send: %d received: %d loss: %.2f%% min_rtt: %dms avg_rtt: %.2fms max_rtt: %dms jitter: %.2fms variance: %.2f", statistic.send_counter,
+		statistic.received_counter, float64(loss)*100/float64(statistic.send_counter), min_rtt, avg_rtt, max_rtt, statistic.calculate_jitter(), statistic.calculate_variance())
 	fmt.Println(res)
 
 	for z, m := range statistic.rcode_slice {
@@ -135,26 +136,40 @@ func (statistic *Statistic) calculate_jitter() float64 {
 	for i := 1; i < len(statistic.rtt_slice); i++ {
 		//Calculate absolute diff
 		latencyDiff = math.Abs(float64(statistic.rtt_slice[i] - statistic.rtt_slice[i-1]))
-		//Calculate diff
-		//latencyDiff = float64(statistic.rtt_slice[i] - statistic.rtt_slice[i-1])
 		latencyDiffs = append(latencyDiffs, latencyDiff)
 	}
 
-	var sum float64
+	var sumLatencyDiff float64
 	//calculate sum of all elements in latencyDiffs
 	for _, value := range latencyDiffs {
-		sum += value
+		sumLatencyDiff += value
 	}
 
-	mean := sum / float64(len(latencyDiffs))
+	avglatencyDiffs := sumLatencyDiff / float64(len(latencyDiffs))
 
-	var variance float64
+	var jitter float64
 	for _, value := range latencyDiffs {
-		deviation := value - mean
-		variance += deviation * deviation
+		deviation := math.Abs(value - avglatencyDiffs)
+		jitter += deviation
 	}
-	variance /= float64(len(latencyDiffs))
+	jitter = jitter / float64(len(latencyDiffs))
 
-	return variance
+	return jitter
+
+}
+
+func (statistic *Statistic) calculate_variance() float64 {
+	mean := 0.0
+	for _, value := range statistic.rtt_slice {
+		mean += float64(value)
+	}
+	mean /= float64(len(statistic.rtt_slice))
+
+	variance := 0.0
+	for _, value := range statistic.rtt_slice {
+		variance += (float64(value) - mean) * (float64(value) - mean)
+	}
+
+	return variance / float64(len(statistic.rtt_slice))
 
 }
