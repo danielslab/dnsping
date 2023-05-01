@@ -165,6 +165,5 @@ func main() {
 
 	statistic.Print()
 	statistic.RTT_Summary()
-	statistic.Calculate_jitter()
 
 }
