@@ -77,7 +77,7 @@ func (statistic *Statistic) Print() {
 	avg_rtt = math.Round(avg_rtt)
 
 	fmt.Println("------------------------------")
-	res := fmt.Sprintf("send: %d received: %d loss: %.2f%% min_rtt: %dms avg_rtt: %.2fms max_rtt: %dms", statistic.send_counter, statistic.received_counter, float64(loss)*100/float64(statistic.send_counter), min_rtt, avg_rtt, max_rtt)
+	res := fmt.Sprintf("send: %d received: %d loss: %.2f%% min_rtt: %dms avg_rtt: %.2fms max_rtt: %dms jitter: %.2fms", statistic.send_counter, statistic.received_counter, float64(loss)*100/float64(statistic.send_counter), min_rtt, avg_rtt, max_rtt, statistic.calculate_jitter())
 	fmt.Println(res)
 
 	for z, m := range statistic.rcode_slice {
@@ -87,7 +87,7 @@ func (statistic *Statistic) Print() {
 
 }
 
-func (statistic *Statistic) Summary() {
+func (statistic *Statistic) RTT_Summary() {
 
 	fmt.Println("")
 	fmt.Println("rtt distribution:")
@@ -97,23 +97,23 @@ func (statistic *Statistic) Summary() {
 		from := i
 		if i >= 100 {
 			i = i + 150
-			statistic.calculate(from, i)
+			statistic.calculate_rtt_stats(from, i)
 		}
 		if i < 100 && i >= 10 {
 			i = i + 10
-			statistic.calculate(from, i)
+			statistic.calculate_rtt_stats(from, i)
 		}
 		if i < 10 {
 			i = i + 5
-			statistic.calculate(from, i)
+			statistic.calculate_rtt_stats(from, i)
 		}
 		if i == 1000 {
-			statistic.calculate(i, 10000)
+			statistic.calculate_rtt_stats(i, 10000)
 		}
 	}
 }
 
-func (statistic *Statistic) calculate(from int, to int) {
+func (statistic *Statistic) calculate_rtt_stats(from int, to int) {
 	statistic.mutex.Lock()
 	defer statistic.mutex.Unlock()
 	count := 0.0
@@ -127,4 +127,34 @@ func (statistic *Statistic) calculate(from int, to int) {
 	//res := fmt.Sprintf("%dms to %dms: %.2f%% (count: %d)", from, to, value, int(count))
 	res := fmt.Sprintf("%dms >= <= %dms: %.2f%% (count: %d)", from, to, value, int(count))
 	fmt.Println(res)
+}
+
+func (statistic *Statistic) calculate_jitter() float64 {
+	var latencyDiffs []float64
+	var latencyDiff float64
+	for i := 1; i < len(statistic.rtt_slice); i++ {
+		//Calculate absolute diff
+		latencyDiff = math.Abs(float64(statistic.rtt_slice[i] - statistic.rtt_slice[i-1]))
+		//Calculate diff
+		//latencyDiff = float64(statistic.rtt_slice[i] - statistic.rtt_slice[i-1])
+		latencyDiffs = append(latencyDiffs, latencyDiff)
+	}
+
+	var sum float64
+	//calculate sum of all elements in latencyDiffs
+	for _, value := range latencyDiffs {
+		sum += value
+	}
+
+	mean := sum / float64(len(latencyDiffs))
+
+	var variance float64
+	for _, value := range latencyDiffs {
+		deviation := value - mean
+		variance += deviation * deviation
+	}
+	variance /= float64(len(latencyDiffs))
+
+	return variance
+
 }
