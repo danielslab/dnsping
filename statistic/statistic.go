@@ -77,7 +77,7 @@ func (statistic *Statistic) Print() {
 	avg_rtt = math.Round(avg_rtt)
 
 	fmt.Println("------------------------------")
-	res := fmt.Sprintf("send: %d received: %d loss: %.2f%% min_rtt: %dms avg_rtt: %.2fms max_rtt: %dms jitter: %.2fms variance: %.2f", statistic.send_counter,
+	res := fmt.Sprintf("send: %d received: %d loss: %.2f%% min_rtt: %dms avg_rtt: %.2fms max_rtt: %dms jitter: %.2fms rtt_variance: %.2fms^2", statistic.send_counter,
 		statistic.received_counter, float64(loss)*100/float64(statistic.send_counter), min_rtt, avg_rtt, max_rtt, statistic.calculate_jitter(), statistic.calculate_variance())
 	fmt.Println(res)
 
