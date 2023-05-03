@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"math"
 	"net"
 	"os"
 	"os/signal"
@@ -14,6 +15,37 @@ import (
 	"github.com/danielslab/dnsping/statistic"
 	"github.com/miekg/dns"
 )
+
+func generateLabels(queue_channel chan string) {
+	//alphabet^character_count generates 2481152873203736576 label combinations
+	alphabet := "abcdefghijklmnopqrstuvwxyz"
+	character_count := 13 //13
+	lenAlphabet := len(alphabet)
+	numCombinations := int(math.Pow(float64(lenAlphabet), float64(character_count)))
+
+	for i := 0; i < numCombinations; i++ {
+		// Convert the index to a combination
+		index := i
+		combination := ""
+		// Iterate over each character in the combination
+		for j := 0; j < character_count; j++ {
+			// Determine the rest of the division of the index by the length of the alphabet
+			remainder := index % lenAlphabet
+
+			//fmt.Printf("i: %d j: %d index: %d remainder=%d%%%d=%d newindex=%d/%d=%d %c\n", i, j, index, index, lenAlphabet, remainder, index, lenAlphabet, index/lenAlphabet, alphabet[remainder])
+
+			// Divide the index by the length of the alphabet, so you know how many times the row has already been run through completely
+			index = index / lenAlphabet
+			// Add the corresponding character of the alphabet to the beginning of the combination
+			combination = string(alphabet[remainder]) + combination
+		}
+
+		queue_channel <- combination
+	}
+	//close channel when all labels were genrated
+	close(queue_channel)
+
+}
 
 func send_query(msgnumber int, dnsserver, dnsport, domain string, dnstype uint16, timeout uint16, quiet bool, statistic *statistic.Statistic, timeouts_only bool) {
 
@@ -74,6 +106,9 @@ func send_query(msgnumber int, dnsserver, dnsport, domain string, dnstype uint16
 
 func main() {
 
+	//Channel as Label-Queue
+	queue_channel := make(chan string, 10000000)
+
 	var dnsserver string
 	var dnsport string
 	var domain string
@@ -83,6 +118,7 @@ func main() {
 	var quiet bool
 	var qtype string
 	var timeouts_only bool
+	var flame bool
 
 	flag.StringVar(&dnsserver, "dnsserver", "8.8.8.8", "dnsserver to sent requests")
 	flag.StringVar(&dnsport, "dnsport", "53", "dnsport to sent requests")
@@ -93,6 +129,7 @@ func main() {
 	flag.BoolVar(&quiet, "quiet", false, "displays only a summary every 10 seconds")
 	flag.BoolVar(&timeouts_only, "timeouts_only", false, "displays only timeouts or paketloss")
 	flag.StringVar(&qtype, "qtype", "A", "dns query type for request")
+	flag.BoolVar(&flame, "flame", false, "adds a 13 digit dynamically generated subdomain in front of the domain for each query")
 
 	flag.Parse()
 
@@ -130,6 +167,11 @@ func main() {
 
 	}
 
+	//genarate random Labels if flame true
+	if flame == true {
+		go generateLabels(queue_channel)
+	}
+
 	//capture ctr+c signal SIGINT
 	c := make(chan os.Signal)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
@@ -140,14 +182,28 @@ func main() {
 		os.Exit(1)
 	}()
 
-	//send querys parralel out
 	for i := 0; i < count; i++ {
 		time.Sleep(time.Duration(sleep) * time.Microsecond)
 		waitGroup.Add(1)
-		go func(i int) {
-			send_query(i, dnsserver, dnsport, domain, dnstype, uint16(timeout), quiet, statistic, timeouts_only)
-			waitGroup.Done()
-		}(i)
+		//send querys parralel out if flame = false
+		if flame == false {
+			go func(i int) {
+				send_query(i, dnsserver, dnsport, domain, dnstype, uint16(timeout), quiet, statistic, timeouts_only)
+				waitGroup.Done()
+			}(i)
+		} else {
+			subdomain_label, ok := <-queue_channel
+			if ok {
+				go func(i int) {
+					new_domain := subdomain_label + "." + domain
+					send_query(i, dnsserver, dnsport, new_domain, dnstype, uint16(timeout), quiet, statistic, timeouts_only)
+					waitGroup.Done()
+				}(i)
+			} else {
+				fmt.Println("received all Labels from label_queue")
+				break
+			}
+		}
 
 	}
 
