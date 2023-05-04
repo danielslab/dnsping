@@ -191,7 +191,7 @@ func main() {
 		os.Exit(1)
 	}()
 
-	for i := 0; i < count; i++ {
+	for i := 1; i <= count; i++ {
 		time.Sleep(time.Duration(QPS_to_Time(qps)) * time.Microsecond)
 		waitGroup.Add(1)
 		//send querys parralel out if flame = false
