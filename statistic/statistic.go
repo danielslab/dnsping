@@ -5,6 +5,7 @@ import (
 	"math"
 	"strconv"
 	"sync"
+	"time"
 )
 
 type Statistic struct {
@@ -172,4 +173,15 @@ func (statistic *Statistic) calculate_variance() float64 {
 
 	return variance / float64(len(statistic.rtt_slice))
 
+}
+
+func (statistic *Statistic) Print_QPS_on_Wire(start_time time.Time, stop_time time.Time, old_send_counter int) int {
+	statistic.mutex.Lock()
+	defer statistic.mutex.Unlock()
+
+	duration := stop_time.Sub(start_time).Seconds()
+	qps := float64(statistic.send_counter-old_send_counter) / duration
+	fmt.Printf("qps on wire: %f\n\n", qps)
+
+	return int(statistic.send_counter)
 }

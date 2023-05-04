@@ -143,6 +143,7 @@ func main() {
 	flag.Parse()
 
 	dnstype := dns.StringToType[qtype]
+	qps_time := time.Duration(QPS_to_Time(qps)) * time.Microsecond
 
 	var waitGroup sync.WaitGroup
 
@@ -167,10 +168,14 @@ func main() {
 		fmt.Printf("%-15s %-35s %-15s %-10s %-20s\n", "MsgNumber", "SendTime", "RTT(ms)", "RCode", "Answer snipped")
 	} else {
 		go func() {
+			// Print Interim-Statstics
+			old_send_counter := 0
 			for {
-				// Print Interim-Statstics
+				start_time := time.Now()
 				time.Sleep(10 * time.Second)
+				stop_time := time.Now()
 				statistic.Print()
+				old_send_counter = statistic.Print_QPS_on_Wire(start_time, stop_time, old_send_counter)
 			}
 		}()
 
@@ -181,18 +186,20 @@ func main() {
 		go generateLabels(queue_channel)
 	}
 
+	start_time := time.Now()
+
 	//capture ctr+c signal SIGINT
 	c := make(chan os.Signal)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-c
 		statistic.Print()
+		statistic.Print_QPS_on_Wire(start_time, time.Now(), 0)
 		statistic.RTT_Summary()
 		os.Exit(1)
 	}()
 
 	for i := 1; i <= count; i++ {
-		time.Sleep(time.Duration(QPS_to_Time(qps)) * time.Microsecond)
 		waitGroup.Add(1)
 		//send querys parralel out if flame = false
 		if flame == false {
@@ -213,12 +220,14 @@ func main() {
 				break
 			}
 		}
-
+		time.Sleep(qps_time)
 	}
 
 	waitGroup.Wait()
+	stop_time := time.Now()
 
 	statistic.Print()
+	statistic.Print_QPS_on_Wire(start_time, stop_time, 0)
 	statistic.RTT_Summary()
 
 }
