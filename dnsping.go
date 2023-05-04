@@ -104,6 +104,15 @@ func send_query(msgnumber int, dnsserver, dnsport, domain string, dnstype uint16
 
 }
 
+func QPS_to_Time(qps int) int {
+	if qps <= 0 || qps >= 1000000 {
+		fmt.Println("QPS range has to be between 1 to 1000000")
+		os.Exit(1)
+	}
+	time := 1000000 / qps
+	return time
+}
+
 func main() {
 
 	//Channel as Label-Queue
@@ -114,7 +123,7 @@ func main() {
 	var domain string
 	var timeout int
 	var count int
-	var sleep int
+	var qps int
 	var quiet bool
 	var qtype string
 	var timeouts_only bool
@@ -125,7 +134,7 @@ func main() {
 	flag.StringVar(&domain, "domain", "google.de", "Request domain")
 	flag.IntVar(&timeout, "timeout", 1000, "dns-timeout in ms")
 	flag.IntVar(&count, "count", 10, "count of messages to send")
-	flag.IntVar(&sleep, "sleep", 100000, "time between querys in μs")
+	flag.IntVar(&qps, "qps", 5, "querys per second (1 to 1000000)")
 	flag.BoolVar(&quiet, "quiet", false, "displays only a summary every 10 seconds")
 	flag.BoolVar(&timeouts_only, "timeouts_only", false, "displays only timeouts or paketloss")
 	flag.StringVar(&qtype, "qtype", "A", "dns query type for request")
@@ -144,8 +153,8 @@ func main() {
 	fmt.Println("query_domain: " + domain)
 	fmt.Println("query_type: " + dns.TypeToString[dnstype])
 	fmt.Println("timeout in ms: " + strconv.Itoa(timeout))
-	fmt.Println("sleep in μs: " + strconv.Itoa(sleep))
-	fmt.Println("Count: " + strconv.Itoa(count))
+	fmt.Println("qps: " + strconv.Itoa(qps))
+	fmt.Println("count: " + strconv.Itoa(count))
 	fmt.Println("quiet: " + strconv.FormatBool(quiet))
 	fmt.Println("------------------------------")
 	fmt.Println("sending packets...")
@@ -155,7 +164,7 @@ func main() {
 
 	if quiet == false {
 		// Print Head-line
-		fmt.Printf("%-15s %-35s %-15s %-10s %-20s\n", "MsgNumber", "SendTime", "RTT(ms)", "RCode", "Answer")
+		fmt.Printf("%-15s %-35s %-15s %-10s %-20s\n", "MsgNumber", "SendTime", "RTT(ms)", "RCode", "Answer snipped")
 	} else {
 		go func() {
 			for {
@@ -183,7 +192,7 @@ func main() {
 	}()
 
 	for i := 0; i < count; i++ {
-		time.Sleep(time.Duration(sleep) * time.Microsecond)
+		time.Sleep(time.Duration(QPS_to_Time(qps)) * time.Microsecond)
 		waitGroup.Add(1)
 		//send querys parralel out if flame = false
 		if flame == false {
