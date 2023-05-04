@@ -31,11 +31,11 @@ quiet: false
 sending packets...
 
 MsgNumber       SendTime                            RTT(ms)         RCode      Answer snipped      
-0               05-04-2023 14:10:47.392541472       31              NOERROR    google.de.       300     IN      A       142.251.36.227 
-1               05-04-2023 14:10:47.592538732       17              NOERROR    google.de.       300     IN      A       142.251.36.227 
-2               05-04-2023 14:10:47.793248324       17              NOERROR    google.de.       300     IN      A       142.251.36.227 
-3               05-04-2023 14:10:47.994274143       30              NOERROR    google.de.       300     IN      A       142.251.36.227 
-4               05-04-2023 14:10:48.195253040       18              NOERROR    google.de.       299     IN      A       142.251.36.227 
+1               05-04-2023 14:10:47.392541472       31              NOERROR    google.de.       300     IN      A       142.251.36.227 
+2               05-04-2023 14:10:47.592538732       17              NOERROR    google.de.       300     IN      A       142.251.36.227 
+3               05-04-2023 14:10:47.793248324       17              NOERROR    google.de.       300     IN      A       142.251.36.227 
+4               05-04-2023 14:10:47.994274143       30              NOERROR    google.de.       300     IN      A       142.251.36.227 
+5               05-04-2023 14:10:48.195253040       18              NOERROR    google.de.       299     IN      A       142.251.36.227 
 ------------------------------
 send: 5 received: 5 loss: 0.00% min_rtt: 17ms avg_rtt: 23.00ms max_rtt: 31ms jitter: 4.88ms rtt_variance: 41.84ms^2
 NOERROR:5 
@@ -78,7 +78,7 @@ quiet: false
 sending packets...
 
 MsgNumber       SendTime                            RTT(ms)         RCode      Answer snipped      
-0               05-04-2023 14:12:43.723435834       read udp [fd00::4553:b9ba:a7e3:2383]:47462->[fd20::]:53: i/o timeout 
+1               05-04-2023 14:12:43.723435834       read udp [fd00::4553:b9ba:a7e3:2383]:47462->[fd20::]:53: i/o timeout 
 ------------------------------
 send: 5 received: 4 loss: 20.00% min_rtt: 0ms avg_rtt: 0.00ms max_rtt: 1ms jitter: 0.44ms rtt_variance: 0.19ms^2
 NOERROR:4 
