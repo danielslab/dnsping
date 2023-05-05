@@ -133,17 +133,22 @@ func main() {
 	flag.StringVar(&dnsport, "dnsport", "53", "dnsport to sent requests")
 	flag.StringVar(&domain, "domain", "google.de", "Request domain")
 	flag.IntVar(&timeout, "timeout", 1000, "dns-timeout in ms")
-	flag.IntVar(&count, "count", 10, "count of messages to send")
-	flag.IntVar(&qps, "qps", 5, "querys per second (1 to 1000000)")
+	flag.IntVar(&count, "count", 10, "count of messages to send. count 0 sets count unlimited")
+	flag.IntVar(&qps, "qps", 5, "desired querys per second (1 to 1000000)")
 	flag.BoolVar(&quiet, "quiet", false, "displays only a summary every 10 seconds")
 	flag.BoolVar(&timeouts_only, "timeouts_only", false, "displays only timeouts or paketloss")
 	flag.StringVar(&qtype, "qtype", "A", "dns query type for request")
-	flag.BoolVar(&flame, "flame", false, "adds a 13 digit dynamically generated subdomain in front of the domain for each query")
+	flag.BoolVar(&flame, "flame", false, "adds a 13 digit (aaaaaaaaaaaaa - zzzzzzzzzzzz) increasing subdomain in front of the domain for each query.")
 
 	flag.Parse()
 
 	dnstype := dns.StringToType[qtype]
 	qps_time := time.Duration(QPS_to_Time(qps)) * time.Microsecond
+
+	if count == 0 {
+		//Set count to max integer when 0
+		count = math.MaxInt
+	}
 
 	var waitGroup sync.WaitGroup
 
