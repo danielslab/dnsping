@@ -152,6 +152,7 @@ func main() {
 	fmt.Println("dnsserver: " + dnsserver)
 	fmt.Println("dnsport: " + dnsport)
 	fmt.Println("query_domain: " + domain)
+	fmt.Println("flame: " + strconv.FormatBool(flame))
 	fmt.Println("query_type: " + dns.TypeToString[dnstype])
 	fmt.Println("timeout in ms: " + strconv.Itoa(timeout))
 	fmt.Println("qps: " + strconv.Itoa(qps))
