@@ -64,6 +64,10 @@ func send_query(msgnumber int, dnsserver, dnsport, domain string, dnstype uint16
 
 	//Save sendtime
 	dt := time.Now().Format("01-02-2006 15:04:05.000000000")
+
+	// increse send counter
+	statistic.Increase_send_counter()
+
 	//send dns message
 	in, rtt, err := c.Exchange(m1, dnsserver+":"+dnsport)
 
@@ -91,9 +95,6 @@ func send_query(msgnumber int, dnsserver, dnsport, domain string, dnstype uint16
 		}
 
 	}
-
-	// increse send counter
-	statistic.Increase_send_counter()
 
 	if err == nil {
 		// increse received counter
@@ -175,13 +176,15 @@ func main() {
 	} else {
 		go func() {
 			// Print Interim-Statstics
-			old_send_counter := 0
+			old_rx_counter := 0
+			old_tx_counter := 0
 			for {
 				start_time := time.Now()
 				time.Sleep(10 * time.Second)
 				stop_time := time.Now()
 				statistic.Print()
-				old_send_counter = statistic.Print_QPS_on_Wire(start_time, stop_time, old_send_counter)
+				old_tx_counter = statistic.Print_tx_pps_on_Wire(start_time, stop_time, old_tx_counter)
+				old_rx_counter = statistic.Print_rx_pps_on_Wire(start_time, stop_time, old_rx_counter)
 			}
 		}()
 
@@ -200,7 +203,8 @@ func main() {
 	go func() {
 		<-c
 		statistic.Print()
-		statistic.Print_QPS_on_Wire(start_time, time.Now(), 0)
+		statistic.Print_tx_pps_on_Wire(start_time, statistic.Last_send_time, 0)
+		statistic.Print_rx_pps_on_Wire(start_time, time.Now(), 0)
 		statistic.RTT_Summary()
 		os.Exit(1)
 	}()
@@ -233,7 +237,8 @@ func main() {
 	stop_time := time.Now()
 
 	statistic.Print()
-	statistic.Print_QPS_on_Wire(start_time, stop_time, 0)
+	statistic.Print_tx_pps_on_Wire(start_time, statistic.Last_send_time, 0)
+	statistic.Print_rx_pps_on_Wire(start_time, stop_time, 0)
 	statistic.RTT_Summary()
 
 }
