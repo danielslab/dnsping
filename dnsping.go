@@ -42,7 +42,7 @@ func generateLabels(queue_channel chan string) {
 
 		queue_channel <- combination
 	}
-	//close channel when all labels were genrated
+	//close channel when all labels were generated
 	close(queue_channel)
 
 }
@@ -56,7 +56,7 @@ func send_query(msgnumber int, dnsserver, dnsport, domain string, dnstype uint16
 	m1.Question = make([]dns.Question, 1)
 	m1.Question[0] = dns.Question{domain + ".", dnstype, dns.ClassINET}
 
-	//Create dnsclient with timeout
+	//create dnsclient with timeout
 	c := new(dns.Client)
 	c.Dialer = &net.Dialer{
 		Timeout: time.Duration(timeout) * time.Millisecond,
@@ -65,7 +65,7 @@ func send_query(msgnumber int, dnsserver, dnsport, domain string, dnstype uint16
 	//Save sendtime
 	dt := time.Now().Format("01-02-2006 15:04:05.000000000")
 
-	// increse send counter
+	// increase send counter
 	statistic.Increase_send_counter()
 
 	//send dns message
@@ -97,7 +97,7 @@ func send_query(msgnumber int, dnsserver, dnsport, domain string, dnstype uint16
 	}
 
 	if err == nil {
-		// increse received counter
+		// increase received counter
 		statistic.Increase_received_counter()
 		statistic.Append_rtt(int(rtt.Milliseconds()))
 		statistic.Increase_rcode_counter(dns.RcodeToString[in.Rcode])
@@ -190,7 +190,7 @@ func main() {
 
 	}
 
-	//genarate random Labels if flame true
+	//generate random labels if flame true
 	if flame == true {
 		go generateLabels(queue_channel)
 	}
@@ -210,6 +210,7 @@ func main() {
 	}()
 
 	for i := 1; i <= count; i++ {
+		time.Sleep(qps_time)
 		waitGroup.Add(1)
 		//send querys parralel out if flame = false
 		if flame == false {
@@ -230,7 +231,7 @@ func main() {
 				break
 			}
 		}
-		time.Sleep(qps_time)
+
 	}
 
 	waitGroup.Wait()

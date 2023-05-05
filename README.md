@@ -22,6 +22,7 @@ dnsping Parameters:
 dnsserver: 8.8.8.8
 dnsport: 53
 query_domain: google.de
+flame: false
 query_type: A
 timeout in ms: 100
 qps: 5
@@ -31,25 +32,25 @@ quiet: false
 sending packets...
 
 MsgNumber       SendTime                            RTT(ms)         RCode      Answer snipped      
-1               05-04-2023 18:38:25.781496288       27              NOERROR    google.de.       300     IN      A       142.251.36.227 
-2               05-04-2023 18:38:25.982112051       30              NOERROR    google.de.       300     IN      A       142.251.36.227 
-3               05-04-2023 18:38:26.182972332       28              NOERROR    google.de.       300     IN      A       142.251.36.227 
-4               05-04-2023 18:38:26.383393279       15              NOERROR    google.de.       300     IN      A       142.251.36.227 
-5               05-04-2023 18:38:26.584511618       14              NOERROR    google.de.       300     IN      A       142.251.36.227 
+1               05-05-2023 14:48:52.600647146       43              NOERROR    google.de.       300     IN      A       142.251.36.227 
+2               05-05-2023 14:48:52.801061651       31              NOERROR    google.de.       300     IN      A       142.251.36.227 
+3               05-05-2023 14:48:53.002170262       29              NOERROR    google.de.       300     IN      A       142.251.36.227 
+4               05-05-2023 14:48:53.202679493       31              NOERROR    google.de.       300     IN      A       142.251.36.227 
+5               05-05-2023 14:48:53.403414168       18              NOERROR    google.de.       300     IN      A       142.251.36.227 
 ------------------------------
-send: 5 received: 5 loss: 0.00% min_rtt: 14ms avg_rtt: 23.00ms max_rtt: 30ms jitter: 4.12ms rtt_variance: 46.96ms^2
-NOERROR:5 
-qps on wire: 4.978158
-
+send: 5 received: 5 loss: 0.00% min_rtt: 18ms avg_rtt: 30.00ms max_rtt: 43ms jitter: 5.25ms rtt_variance: 63.04ms^2
+RCodes: NOERROR:5 
+tx pps: 4.981294
+rx pps: 4.891380
 
 rtt distribution:
 ------------------------------
 0ms >= <= 5ms: 0.00% (count: 0)
 5ms >= <= 10ms: 0.00% (count: 0)
-10ms >= <= 20ms: 40.00% (count: 2)
-20ms >= <= 30ms: 40.00% (count: 2)
-30ms >= <= 40ms: 20.00% (count: 1)
-40ms >= <= 50ms: 0.00% (count: 0)
+10ms >= <= 20ms: 20.00% (count: 1)
+20ms >= <= 30ms: 20.00% (count: 1)
+30ms >= <= 40ms: 40.00% (count: 2)
+40ms >= <= 50ms: 20.00% (count: 1)
 50ms >= <= 60ms: 0.00% (count: 0)
 60ms >= <= 70ms: 0.00% (count: 0)
 70ms >= <= 80ms: 0.00% (count: 0)
@@ -71,6 +72,7 @@ dnsping Parameters:
 dnsserver: [fd20::]
 dnsport: 53
 query_domain: google.de
+flame: false
 query_type: A
 timeout in ms: 10
 qps: 10
@@ -80,12 +82,12 @@ quiet: false
 sending packets...
 
 MsgNumber       SendTime                            RTT(ms)         RCode      Answer snipped      
-1               05-04-2023 18:39:15.137009019       read udp [fd00::4553:b9ba:a7e3:2383]:54163->[fd20::]:53: i/o timeout 
+1               05-05-2023 14:47:36.649159629       read udp [fd00::778d:700f:c72a:a365]:57738->[fd20::]:53: i/o timeout 
 ------------------------------
 send: 5 received: 4 loss: 20.00% min_rtt: 1ms avg_rtt: 1.00ms max_rtt: 1ms jitter: 0.00ms rtt_variance: 0.00ms^2
-NOERROR:4 
-qps on wire: 9.943961
-
+RCodes: NOERROR:4 
+tx pps: 9.929743
+rx pps: 7.919308
 
 rtt distribution:
 ------------------------------
@@ -115,7 +117,7 @@ rtt distribution:
 ```
 Usage of dnsping:
   -count int
-        count of messages to send (default 10)
+        count of messages to send. count 0 sets count unlimited (default 10)
   -dnsport string
         dnsport to sent requests (default "53")
   -dnsserver string
@@ -123,9 +125,9 @@ Usage of dnsping:
   -domain string
         Request domain (default "google.de")
   -flame
-        adds a 13 digit dynamically generated subdomain in front of the domain for each query
+        adds a 13 digit (aaaaaaaaaaaaa - zzzzzzzzzzzz) increasing subdomain in front of the domain for each query.
   -qps int
-        querys per second (1 to 1000000) (default 5)
+        desired querys per second (1 to 1000000) (default 5)
   -qtype string
         dns query type for request (default "A")
   -quiet
