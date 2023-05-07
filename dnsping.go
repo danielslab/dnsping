@@ -106,7 +106,7 @@ func send_query(msgnumber int, dnsserver, dnsport, domain string, dnstype uint16
 }
 
 func QPS_to_Time(qps int) int {
-	if qps <= 0 || qps >= 1000000 {
+	if qps <= 0 || qps > 1000000 {
 		fmt.Println("QPS range has to be between 1 to 1000000")
 		os.Exit(1)
 	}
@@ -203,14 +203,14 @@ func main() {
 	go func() {
 		<-c
 		statistic.Print()
-		statistic.Print_tx_pps_on_Wire(start_time, statistic.Last_send_time, 0)
+		statistic.Print_tx_pps_on_Wire(start_time, time.Now(), 0)
 		statistic.Print_rx_pps_on_Wire(start_time, time.Now(), 0)
 		statistic.RTT_Summary()
 		os.Exit(1)
 	}()
 
 	for i := 1; i <= count; i++ {
-		time.Sleep(qps_time)
+
 		waitGroup.Add(1)
 		//send querys parralel out if flame = false
 		if flame == false {
@@ -231,14 +231,14 @@ func main() {
 				break
 			}
 		}
-
+		time.Sleep(qps_time)
 	}
 
 	waitGroup.Wait()
 	stop_time := time.Now()
 
 	statistic.Print()
-	statistic.Print_tx_pps_on_Wire(start_time, statistic.Last_send_time, 0)
+	statistic.Print_tx_pps_on_Wire(start_time, stop_time, 0)
 	statistic.Print_rx_pps_on_Wire(start_time, stop_time, 0)
 	statistic.RTT_Summary()
 

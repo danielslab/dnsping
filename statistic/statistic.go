@@ -14,7 +14,6 @@ type Statistic struct {
 	received_counter int
 	rtt_slice        []int
 	rcode_slice      map[string]int
-	Last_send_time   time.Time
 }
 
 func Init_Statistic() *Statistic {
@@ -35,7 +34,6 @@ func (statistic *Statistic) Increase_send_counter() {
 	statistic.mutex.Lock()
 	defer statistic.mutex.Unlock()
 	statistic.send_counter += 1
-	statistic.Last_send_time = time.Now()
 }
 
 func (statistic *Statistic) Increase_received_counter() {
@@ -129,7 +127,7 @@ func (statistic *Statistic) calculate_rtt_stats(from int, to int) {
 
 	value := count / float64(len(statistic.rtt_slice)) * 100
 	//res := fmt.Sprintf("%dms to %dms: %.2f%% (count: %d)", from, to, value, int(count))
-	res := fmt.Sprintf("%dms >= <= %dms: %.2f%% (count: %d)", from, to, value, int(count))
+	res := fmt.Sprintf("rtt < %dms: %.2f%% (count: %d)", to, value, int(count))
 	fmt.Println(res)
 }
 
@@ -182,6 +180,11 @@ func (statistic *Statistic) Print_rx_pps_on_Wire(start_time time.Time, stop_time
 	defer statistic.mutex.Unlock()
 
 	duration := stop_time.Sub(start_time).Seconds()
+
+	if duration <= 1 {
+		//prevents big pps when duration is under 1s
+		duration = 1
+	}
 	pps := float64(statistic.received_counter-old_rcv_counter) / duration
 	fmt.Printf("rx pps: %f\n", pps)
 
@@ -193,6 +196,10 @@ func (statistic *Statistic) Print_tx_pps_on_Wire(start_time time.Time, stop_time
 	defer statistic.mutex.Unlock()
 
 	duration := stop_time.Sub(start_time).Seconds()
+	if duration <= 1 {
+		//prevents big pps when duration is under 1s
+		duration = 1
+	}
 	pps := float64(statistic.send_counter-old_send_counter) / duration
 	fmt.Printf("tx pps: %f\n", pps)
 
