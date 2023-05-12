@@ -153,5 +153,6 @@ Usage of dnsping:
 ```
 git clone https://github.com/danielslab/dnsping
 cd dnsping
+go mod tidy
 go build -ldflags "-linkmode 'external' -extldflags '-static'"
 ```
