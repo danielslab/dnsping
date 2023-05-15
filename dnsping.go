@@ -45,36 +45,36 @@ func generateLabels(queue_channel chan string) {
 
 }
 
-func send_query(msgnumber int, dnsserver *string, dnsport *string, domain *string, dnstype *uint16, timeout *int, quiet *bool, statistic *statistic.Statistic, timeouts_only *bool, tcp *bool, src *string) {
+func send_query(msgnumber int, cfg *dnspingConfig, domain *string, statistic *statistic.Statistic) {
 
 	//Create DNS-Query-Message
 	m1 := new(dns.Msg)
 	m1.Id = dns.Id()
 	m1.RecursionDesired = true
 	m1.Question = make([]dns.Question, 1)
-	m1.Question[0] = dns.Question{*domain + ".", *dnstype, dns.ClassINET}
+	m1.Question[0] = dns.Question{*domain + ".", cfg.dnstype, dns.ClassINET}
 
 	//create dnsclient with timeout and protocol, default is udp
 	c := new(dns.Client)
 
-	if *tcp == true {
+	if cfg.tcp == true {
 		c.Net = "tcp"
 		laddr := net.TCPAddr{
-			IP:   net.ParseIP(*src),
+			IP:   net.ParseIP(cfg.source),
 			Zone: "",
 		}
 		c.Dialer = &net.Dialer{
-			Timeout:   time.Duration(*timeout) * time.Millisecond,
+			Timeout:   time.Duration(cfg.timeout) * time.Millisecond,
 			LocalAddr: &laddr,
 		}
 	} else {
 		c.Net = "udp"
 		laddr := net.UDPAddr{
-			IP:   net.ParseIP(*src),
+			IP:   net.ParseIP(cfg.source),
 			Zone: "",
 		}
 		c.Dialer = &net.Dialer{
-			Timeout:   time.Duration(*timeout) * time.Millisecond,
+			Timeout:   time.Duration(cfg.timeout) * time.Millisecond,
 			LocalAddr: &laddr,
 		}
 	}
@@ -86,11 +86,11 @@ func send_query(msgnumber int, dnsserver *string, dnsport *string, domain *strin
 	statistic.Increase_send_counter()
 
 	//send dns message
-	in, rtt, err := c.Exchange(m1, *dnsserver+":"+*dnsport)
+	in, rtt, err := c.Exchange(m1, cfg.dnsserver+":"+cfg.dnsport)
 
-	if *quiet == false {
+	if cfg.quiet == false {
 
-		if err == nil && *timeouts_only == false {
+		if err == nil && cfg.timeouts_only == false {
 			//no error
 
 			// if RCode NoERROR
@@ -131,77 +131,88 @@ func QPS_to_Time(qps int) int {
 	return time
 }
 
+type dnspingConfig struct {
+	dnsserver     string
+	dnsport       string
+	domain        string
+	timeout       int
+	count         int
+	qps           int
+	quiet         bool
+	qtype         string
+	dnstype       uint16
+	timeouts_only bool
+	flame         bool
+	tcp           bool
+	source        string
+	interim       int
+}
+
+func (cfg *dnspingConfig) Print() {
+	fmt.Println("dnsping Parameters:")
+	fmt.Println("------------------------------")
+	fmt.Println("src-addr: " + cfg.source)
+	fmt.Println("dnsserver: " + cfg.dnsserver)
+	fmt.Println("dnsport: " + cfg.dnsport)
+	fmt.Println("query_domain: " + cfg.domain)
+	fmt.Println("flame: " + strconv.FormatBool(cfg.flame))
+	fmt.Println("query_type: " + dns.TypeToString[cfg.dnstype])
+	fmt.Println("timeout in ms: " + strconv.Itoa(cfg.timeout))
+	fmt.Println("qps: " + strconv.Itoa(cfg.qps))
+	fmt.Println("count: " + strconv.Itoa(cfg.count))
+	fmt.Println("quiet: "+strconv.FormatBool(cfg.quiet), "(interim-stats-timer: "+strconv.Itoa(cfg.interim)+")")
+	fmt.Println("tcp: " + strconv.FormatBool(cfg.tcp))
+	fmt.Println("timeouts_only: " + strconv.FormatBool(cfg.timeouts_only))
+	fmt.Println("------------------------------")
+	fmt.Println("sending packets...")
+	fmt.Println("")
+}
+
 func main() {
 
 	//Channel as Label-Queue
 	queue_channel := make(chan string, 10000000)
 
-	var dnsserver string
-	var dnsport string
-	var domain string
-	var timeout int
-	var count int
-	var qps int
-	var quiet bool
-	var qtype string
-	var timeouts_only bool
-	var flame bool
-	var tcp bool
-	var source string
-	var interim int
+	//init type dnspingConfig
+	cfg := dnspingConfig{}
 
-	flag.StringVar(&dnsserver, "dnsserver", "8.8.8.8", "dnsserver to sent requests")
-	flag.StringVar(&dnsport, "dnsport", "53", "dst-port to send requests")
-	flag.StringVar(&domain, "domain", "google.de", "request domain")
-	flag.IntVar(&timeout, "timeout", 1000, "dns-timeout in ms")
-	flag.IntVar(&count, "count", 5, "count of messages to send. count 0 sets count to max")
-	flag.IntVar(&qps, "qps", 5, "desired querys per second (1 to 1000000)")
-	flag.BoolVar(&quiet, "quiet", false, "displays only a interim-stats every 10 seconds")
-	flag.BoolVar(&timeouts_only, "timeouts_only", false, "displays only timeouts or paketloss")
-	flag.StringVar(&qtype, "qtype", "A", "dns query type for request")
-	flag.BoolVar(&flame, "flame", false, "adds a 13 digit (aaaaaaaaaaaaa - zzzzzzzzzzzz) increasing subdomain in front of the domain for each query.")
-	flag.BoolVar(&tcp, "tcp", false, "send tcp querys instead of udp")
-	flag.StringVar(&source, "src", "", "local address to sent requests")
-	flag.IntVar(&interim, "interim", 10, "time between interim-stats for quiet-mode")
+	flag.StringVar(&cfg.dnsserver, "dnsserver", "8.8.8.8", "dnsserver to sent requests")
+	flag.StringVar(&cfg.dnsport, "dnsport", "53", "dst-port to send requests")
+	flag.StringVar(&cfg.domain, "domain", "google.de", "request domain")
+	flag.IntVar(&cfg.timeout, "timeout", 1000, "dns-timeout in ms")
+	flag.IntVar(&cfg.count, "count", 5, "count of messages to send. count 0 sets count to max")
+	flag.IntVar(&cfg.qps, "qps", 5, "desired querys per second (1 to 1000000)")
+	flag.BoolVar(&cfg.quiet, "quiet", false, "displays only a interim-stats every 10 seconds")
+	flag.BoolVar(&cfg.timeouts_only, "timeouts_only", false, "displays only timeouts or paketloss")
+	flag.StringVar(&cfg.qtype, "qtype", "A", "dns query type for request")
+	flag.BoolVar(&cfg.flame, "flame", false, "adds a 13 digit (aaaaaaaaaaaaa - zzzzzzzzzzzz) increasing subdomain in front of the domain for each query.")
+	flag.BoolVar(&cfg.tcp, "tcp", false, "send tcp querys instead of udp")
+	flag.StringVar(&cfg.source, "src", "", "local address to sent requests")
+	flag.IntVar(&cfg.interim, "interim", 10, "time between interim-stats for quiet-mode")
 
 	flag.Parse()
 
-	dnstype := dns.StringToType[qtype]
-	qps_time := time.Duration(QPS_to_Time(qps)) * time.Microsecond
+	cfg.dnstype = dns.StringToType[cfg.qtype]
+	qps_time := time.Duration(QPS_to_Time(cfg.qps)) * time.Microsecond
 
-	if interim <= 0 || count < 0 || timeout <= 0 {
+	if cfg.interim <= 0 || cfg.count < 0 || cfg.timeout <= 0 {
 		fmt.Println("wrong input values")
 		os.Exit(1)
 	}
 
-	if count == 0 {
+	if cfg.count == 0 {
 		//Set count to max integer when 0
-		count = math.MaxInt
+		cfg.count = math.MaxInt
 	}
 
 	var waitGroup sync.WaitGroup
 
-	fmt.Println("dnsping Parameters:")
-	fmt.Println("------------------------------")
-	fmt.Println("src-addr: " + source)
-	fmt.Println("dnsserver: " + dnsserver)
-	fmt.Println("dnsport: " + dnsport)
-	fmt.Println("query_domain: " + domain)
-	fmt.Println("flame: " + strconv.FormatBool(flame))
-	fmt.Println("query_type: " + dns.TypeToString[dnstype])
-	fmt.Println("timeout in ms: " + strconv.Itoa(timeout))
-	fmt.Println("qps: " + strconv.Itoa(qps))
-	fmt.Println("count: " + strconv.Itoa(count))
-	fmt.Println("quiet: "+strconv.FormatBool(quiet), "(interim-stats-timer: "+strconv.Itoa(interim)+")")
-	fmt.Println("tcp: " + strconv.FormatBool(tcp))
-	fmt.Println("timeouts_only: " + strconv.FormatBool(timeouts_only))
-	fmt.Println("------------------------------")
-	fmt.Println("sending packets...")
-	fmt.Println("")
+	//Print dnsping settings
+	cfg.Print()
 
 	statistic := statistic.Init_Statistic()
 
-	if quiet == false {
+	if cfg.quiet == false {
 		// Print Head-line
 		fmt.Printf("%-15s %-35s %-15s %-10s %-20s\n", "MsgNumber", "SendTime", "RTT(ms)", "RCode", "Answer snipped")
 	} else {
@@ -217,11 +228,11 @@ func main() {
 				old_tx_counter = statistic.Print_tx_pps_on_Wire(start_time, stop_time, old_tx_counter)
 				old_rx_counter = statistic.Print_rx_pps_on_Wire(start_time, stop_time, old_rx_counter)
 			}
-		}(interim)
+		}(cfg.interim)
 	}
 
 	//generate random labels if flame true
-	if flame == true {
+	if cfg.flame == true {
 		go generateLabels(queue_channel)
 	}
 
@@ -239,21 +250,21 @@ func main() {
 		os.Exit(1)
 	}()
 
-	for i := 1; i <= count; i++ {
+	for i := 1; i <= cfg.count; i++ {
 
 		waitGroup.Add(1)
 		//send querys parralel out if flame = false
-		if flame == false {
+		if cfg.flame == false {
 			go func(i int) {
-				send_query(i, &dnsserver, &dnsport, &domain, &dnstype, &timeout, &quiet, statistic, &timeouts_only, &tcp, &source)
+				send_query(i, &cfg, &cfg.domain, statistic)
 				waitGroup.Done()
 			}(i)
 		} else {
 			subdomain_label, ok := <-queue_channel
 			if ok {
 				go func(i int) {
-					new_domain := subdomain_label + "." + domain
-					send_query(i, &dnsserver, &dnsport, &new_domain, &dnstype, &timeout, &quiet, statistic, &timeouts_only, &tcp, &source)
+					new_domain := subdomain_label + "." + cfg.domain
+					send_query(i, &cfg, &new_domain, statistic)
 					waitGroup.Done()
 				}(i)
 			} else {
