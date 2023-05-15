@@ -250,23 +250,23 @@ func main() {
 		os.Exit(1)
 	}()
 
-	for i := 1; i <= cfg.count; i++ {
+	for msgnumber := 1; msgnumber <= cfg.count; msgnumber++ {
 
 		waitGroup.Add(1)
 		//send querys parralel out if flame = false
 		if cfg.flame == false {
-			go func(i int) {
-				send_query(i, &cfg, &cfg.domain, statistic)
+			go func(msgnumber int) {
+				send_query(msgnumber, &cfg, &cfg.domain, statistic)
 				waitGroup.Done()
-			}(i)
+			}(msgnumber)
 		} else {
 			subdomain_label, ok := <-queue_channel
 			if ok {
-				go func(i int) {
+				go func(msgnumber int) {
 					new_domain := subdomain_label + "." + cfg.domain
-					send_query(i, &cfg, &new_domain, statistic)
+					send_query(msgnumber, &cfg, &new_domain, statistic)
 					waitGroup.Done()
-				}(i)
+				}(msgnumber)
 			} else {
 				fmt.Println("received all Labels from label_queue")
 				break
