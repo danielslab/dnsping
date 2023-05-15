@@ -146,10 +146,12 @@ type dnspingConfig struct {
 	tcp           bool
 	source        string
 	interim       int
+	version       string
+	print_version bool
 }
 
 func (cfg *dnspingConfig) Print() {
-	fmt.Println("dnsping Parameters:")
+	fmt.Println("dnsping", cfg.version, "Parameters:")
 	fmt.Println("------------------------------")
 	fmt.Println("src-addr: " + cfg.source)
 	fmt.Println("dnsserver: " + cfg.dnsserver)
@@ -174,7 +176,7 @@ func main() {
 	queue_channel := make(chan string, 10000000)
 
 	//init type dnspingConfig
-	cfg := dnspingConfig{}
+	cfg := dnspingConfig{version: "1.0.7"}
 
 	flag.StringVar(&cfg.dnsserver, "dnsserver", "8.8.8.8", "dnsserver to sent requests")
 	flag.StringVar(&cfg.dnsport, "dnsport", "53", "dst-port to send requests")
@@ -189,10 +191,17 @@ func main() {
 	flag.BoolVar(&cfg.tcp, "tcp", false, "send tcp querys instead of udp")
 	flag.StringVar(&cfg.source, "src", "", "local address to sent requests")
 	flag.IntVar(&cfg.interim, "interim", 10, "time between interim-stats for quiet-mode")
+	flag.BoolVar(&cfg.print_version, "version", false, "print version of dnsping")
 
 	flag.Parse()
 
 	cfg.dnstype = dns.StringToType[cfg.qtype]
+
+	if cfg.print_version == true {
+		fmt.Println(cfg.version)
+		os.Exit(0)
+	}
+
 	qps_time := time.Duration(QPS_to_Time(cfg.qps)) * time.Microsecond
 
 	if cfg.interim <= 0 || cfg.count < 0 || cfg.timeout <= 0 {
