@@ -116,7 +116,7 @@ func send_query(msgnumber int, cfg *dnspingConfig, domain *string, statistic *st
 	if err == nil {
 		// increase received counter
 		statistic.Increase_received_counter()
-		statistic.Append_rtt(int(rtt.Milliseconds()))
+		statistic.Append_rtt(int(rtt.Milliseconds()), msgnumber)
 		statistic.Increase_rcode_counter(dns.RcodeToString[in.Rcode])
 	}
 

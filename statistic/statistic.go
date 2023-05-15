@@ -3,6 +3,7 @@ package statistic
 import (
 	"fmt"
 	"math"
+	"sort"
 	"strconv"
 	"sync"
 	"time"
@@ -12,7 +13,8 @@ type Statistic struct {
 	mutex            sync.RWMutex
 	send_counter     int
 	received_counter int
-	rtt_slice        []int
+	msgnumber        []int //keys for rtt_slice
+	rtt_slice        map[int]int
 	rcode_slice      map[string]int
 }
 
@@ -20,6 +22,7 @@ func Init_Statistic() *Statistic {
 	return &Statistic{
 		send_counter:     0,
 		received_counter: 0,
+		rtt_slice:        make(map[int]int),
 		rcode_slice:      make(map[string]int),
 	}
 }
@@ -42,10 +45,11 @@ func (statistic *Statistic) Increase_received_counter() {
 	statistic.received_counter += 1
 }
 
-func (statistic *Statistic) Append_rtt(rtt int) {
+func (statistic *Statistic) Append_rtt(rtt int, msgnumber int) {
 	statistic.mutex.Lock()
 	defer statistic.mutex.Unlock()
-	statistic.rtt_slice = append(statistic.rtt_slice, rtt)
+	statistic.msgnumber = append(statistic.msgnumber, msgnumber)
+	statistic.rtt_slice[msgnumber] = rtt
 }
 
 func (statistic *Statistic) Print_Summary() {
@@ -57,24 +61,24 @@ func (statistic *Statistic) Print_Summary() {
 	min_rtt := 0
 	max_rtt := 0
 
-	if len(statistic.rtt_slice) > 0 {
-		min_rtt = statistic.rtt_slice[0]
-		max_rtt = statistic.rtt_slice[0]
+	if len(statistic.msgnumber) > 0 {
+		min_rtt = statistic.rtt_slice[statistic.msgnumber[0]]
+		max_rtt = statistic.rtt_slice[statistic.msgnumber[0]]
 	}
 
 	rcode := "RCodes: "
 
-	for i := 0; i < len(statistic.rtt_slice); i++ {
-		if statistic.rtt_slice[i] < min_rtt {
-			min_rtt = statistic.rtt_slice[i]
+	for i := 0; i < len(statistic.msgnumber); i++ {
+		if statistic.rtt_slice[statistic.msgnumber[i]] < min_rtt {
+			min_rtt = statistic.rtt_slice[statistic.msgnumber[i]]
 		}
-		if statistic.rtt_slice[i] > max_rtt {
-			max_rtt = statistic.rtt_slice[i]
+		if statistic.rtt_slice[statistic.msgnumber[i]] > max_rtt {
+			max_rtt = statistic.rtt_slice[statistic.msgnumber[i]]
 		}
 		// adding the values of array to the variable sum
-		sum += (statistic.rtt_slice[i])
+		sum += (statistic.rtt_slice[statistic.msgnumber[i]])
 	}
-	avg_rtt := (float64(sum)) / (float64(len(statistic.rtt_slice)))
+	avg_rtt := (float64(sum)) / (float64(len(statistic.msgnumber)))
 	avg_rtt = math.Round(avg_rtt)
 
 	fmt.Println("------------------------------")
@@ -118,14 +122,15 @@ func (statistic *Statistic) RTT_Summary() {
 func (statistic *Statistic) calculate_rtt_stats(from int, to int) {
 	statistic.mutex.Lock()
 	defer statistic.mutex.Unlock()
+
 	count := 0.0
-	for i := 0; i < len(statistic.rtt_slice); i++ {
-		if statistic.rtt_slice[i] >= from && statistic.rtt_slice[i] < to {
+	for i := 0; i < len(statistic.msgnumber); i++ {
+		if statistic.rtt_slice[statistic.msgnumber[i]] >= from && statistic.rtt_slice[statistic.msgnumber[i]] < to {
 			count += 1
 		}
 	}
 
-	value := count / float64(len(statistic.rtt_slice)) * 100
+	value := count / float64(len(statistic.msgnumber)) * 100
 	//res := fmt.Sprintf("%dms to %dms: %.2f%% (count: %d)", from, to, value, int(count))
 	res := fmt.Sprintf("rtt < %dms: %.2f%% (count: %d)", to, value, int(count))
 	fmt.Println(res)
@@ -134,9 +139,13 @@ func (statistic *Statistic) calculate_rtt_stats(from int, to int) {
 func (statistic *Statistic) calculate_jitter() float64 {
 	var latencyDiffs []float64
 	var latencyDiff float64
-	for i := 1; i < len(statistic.rtt_slice); i++ {
+
+	//sort slice of keys for correct calculation of diffs to the paket before
+	sort.Ints(statistic.msgnumber)
+
+	for i := 1; i < len(statistic.msgnumber); i++ {
 		//Calculate absolute diff
-		latencyDiff = math.Abs(float64(statistic.rtt_slice[i] - statistic.rtt_slice[i-1]))
+		latencyDiff = math.Abs(float64(statistic.rtt_slice[statistic.msgnumber[i]] - statistic.rtt_slice[statistic.msgnumber[i-1]]))
 		latencyDiffs = append(latencyDiffs, latencyDiff)
 	}
 
@@ -161,17 +170,20 @@ func (statistic *Statistic) calculate_jitter() float64 {
 
 func (statistic *Statistic) calculate_variance() float64 {
 	mean := 0.0
-	for _, value := range statistic.rtt_slice {
-		mean += float64(value)
+
+	for i := 1; i < len(statistic.msgnumber); i++ {
+		mean += float64(statistic.rtt_slice[statistic.msgnumber[i]])
 	}
-	mean /= float64(len(statistic.rtt_slice))
+
+	mean /= float64(len(statistic.msgnumber))
 
 	variance := 0.0
-	for _, value := range statistic.rtt_slice {
-		variance += (float64(value) - mean) * (float64(value) - mean)
+
+	for i := 1; i < len(statistic.msgnumber); i++ {
+		variance += (float64(statistic.rtt_slice[statistic.msgnumber[i]]) - mean) * (float64(statistic.rtt_slice[statistic.msgnumber[i]]) - mean)
 	}
 
-	return variance / float64(len(statistic.rtt_slice))
+	return variance / float64(len(statistic.msgnumber))
 
 }
 
