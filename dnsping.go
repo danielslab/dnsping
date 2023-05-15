@@ -189,7 +189,7 @@ func main() {
 	flag.StringVar(&cfg.qtype, "qtype", "A", "dns query type for request")
 	flag.BoolVar(&cfg.flame, "flame", false, "adds a 13 digit (aaaaaaaaaaaaa - zzzzzzzzzzzz) increasing subdomain in front of the domain for each query.")
 	flag.BoolVar(&cfg.tcp, "tcp", false, "send tcp querys instead of udp")
-	flag.StringVar(&cfg.source, "src", "", "local address to sent requests")
+	flag.StringVar(&cfg.source, "src", "", "local address to send requests")
 	flag.IntVar(&cfg.interim, "interim", 10, "time between interim-stats for quiet-mode")
 	flag.BoolVar(&cfg.print_version, "version", false, "print version of dnsping")
 

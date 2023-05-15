@@ -139,13 +139,15 @@ Usage of dnsping:
   -quiet
         displays only a interim-stats every 10 seconds
   -src string
-        local address to sent requests
+        local address to send requests
   -tcp
         send tcp querys instead of udp
   -timeout int
         dns-timeout in ms (default 1000)
   -timeouts_only
         displays only timeouts or paketloss
+  -version
+        print version of dnsping
 ```
 
 ## statically linked build
