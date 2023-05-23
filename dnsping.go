@@ -174,6 +174,7 @@ func main() {
 
 	//Channel as Label-Queue
 	queue_channel := make(chan string, 10000000)
+	quit_channel := make(chan int)
 
 	//init type dnspingConfig
 	cfg := dnspingConfig{version: "1.0.7"}
@@ -247,41 +248,43 @@ func main() {
 
 	start_time := time.Now()
 
-	//capture ctr+c signal SIGINT
-	c := make(chan os.Signal)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
-		<-c
-		statistic.Print_Summary()
-		statistic.Print_tx_pps_on_Wire(start_time, time.Now(), 0)
-		statistic.Print_rx_pps_on_Wire(start_time, time.Now(), 0)
-		statistic.RTT_Summary()
-		os.Exit(1)
+		//capture ctr+c signal SIGINT
+		c := make(chan os.Signal)
+		signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+		<-c               //receive ctr+c signal
+		quit_channel <- 1 //send quit to for-loop with label send_loop
 	}()
 
+send_loop:
 	for msgnumber := 1; msgnumber <= cfg.count; msgnumber++ {
 
-		waitGroup.Add(1)
-		//send querys parralel out if flame = false
-		if cfg.flame == false {
-			go func(msgnumber int) {
-				send_query(msgnumber, &cfg, &cfg.domain, statistic)
-				waitGroup.Done()
-			}(msgnumber)
-		} else {
-			subdomain_label, ok := <-queue_channel
-			if ok {
+		select {
+		case <-quit_channel:
+			break send_loop
+		default:
+			waitGroup.Add(1)
+			//send querys parralel out if flame = false
+			if cfg.flame == false {
 				go func(msgnumber int) {
-					new_domain := subdomain_label + "." + cfg.domain
-					send_query(msgnumber, &cfg, &new_domain, statistic)
+					send_query(msgnumber, &cfg, &cfg.domain, statistic)
 					waitGroup.Done()
 				}(msgnumber)
 			} else {
-				fmt.Println("received all Labels from label_queue")
-				break
+				subdomain_label, ok := <-queue_channel
+				if ok {
+					go func(msgnumber int) {
+						new_domain := subdomain_label + "." + cfg.domain
+						send_query(msgnumber, &cfg, &new_domain, statistic)
+						waitGroup.Done()
+					}(msgnumber)
+				} else {
+					fmt.Println("received all Labels from label_queue")
+					break send_loop
+				}
 			}
+			time.Sleep(qps_time)
 		}
-		time.Sleep(qps_time)
 	}
 
 	send_stop_time := time.Now()
